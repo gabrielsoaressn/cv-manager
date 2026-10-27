@@ -24,6 +24,19 @@ cp .env.example .env   # já existe um .env pronto para o Ollama
 npm start              # http://localhost:4321
 ```
 
+### Iniciar junto com o computador (systemd)
+
+O arquivo `deploy/cv-manager.service` é um serviço de usuário do systemd. Ajuste os caminhos (`WorkingDirectory` e o `node`) e:
+
+```bash
+cp deploy/cv-manager.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now cv-manager
+loginctl enable-linger "$USER"     # sobe no boot, mesmo antes do login
+```
+
+Comandos úteis: `systemctl --user restart cv-manager` (depois de atualizar o código), `systemctl --user stop cv-manager`, `journalctl --user -u cv-manager -f` (logs).
+
 ## IAs gratuitas suportadas
 
 | Provedor | Custo | Privacidade | Configuração |

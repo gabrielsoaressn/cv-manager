@@ -1,0 +1,16 @@
+[Unit]
+Description=CV Manager (http://localhost:4321)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/gabriel/Documentos/Projetos/cv-manager
+ExecStart=/home/gabriel/.nvm/versions/node/v20.19.5/bin/node server/index.js
+Environment=NODE_ENV=production
+Restart=on-failure
+RestartSec=10
+OOMPolicy=continue
+
+[Install]
+WantedBy=default.target
