@@ -6,6 +6,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { marked } from 'marked';
 import { listarProvedores, gerar, gerarJson, limparPensamento } from './ai.js';
 import { listarFontes, textoDaFonte, EXTENSOES } from './fontes.js';
 import * as prompts from './prompts.js';
@@ -265,7 +266,7 @@ app.post('/api/exportar/docx', rota(async (req, res) => {
     try {
       await run('pandoc', [entrada, '-f', 'markdown', '-o', saida]);
     } catch {
-      throw new Error('Exportar DOCX requer o pandoc instalado (sudo apt install pandoc). Use "Imprimir / PDF" como alternativa.');
+      throw new Error('Exportar DOCX requer o pandoc instalado (sudo apt install pandoc). Use o botão .pdf como alternativa.');
     }
     const arquivo = `${nome.replace(/[^\w\- ]+/g, '').trim() || 'curriculo'}.docx`;
     res.setHeader('Content-Disposition', `attachment; filename="${arquivo}"`);
@@ -273,6 +274,41 @@ app.post('/api/exportar/docx', rota(async (req, res) => {
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
+}));
+
+/**
+ * PDF gerado pelo Chrome headless, sem o cabeçalho/rodapé (título, URL, data)
+ * que o navegador coloca ao imprimir.
+ */
+async function markdownParaPdf(markdown, titulo) {
+  const dir = await fs.mkdtemp(path.join(PASTA_DADOS, 'cache', 'pdf-'));
+  try {
+    const css = await fs.readFile(path.join(RAIZ, 'public', 'impressao.css'), 'utf8');
+    const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${titulo}</title><style>${css}</style></head><body>${marked.parse(markdown)}</body></html>`;
+    const entrada = path.join(dir, 'curriculo.html');
+    const saida = path.join(dir, 'curriculo.pdf');
+    await fs.writeFile(entrada, html);
+    const navegador = process.env.CHROME_PATH || 'google-chrome';
+    try {
+      await run(navegador, [
+        '--headless=new', '--disable-gpu', `--user-data-dir=${path.join(dir, 'perfil')}`,
+        '--no-pdf-header-footer', `--print-to-pdf=${saida}`, `file://${entrada}`,
+      ], { timeout: 60000 });
+    } catch {
+      throw new Error('Gerar PDF requer Google Chrome ou Chromium (defina CHROME_PATH no .env se estiver em outro caminho).');
+    }
+    return await fs.readFile(saida);
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+}
+
+app.post('/api/exportar/pdf', rota(async (req, res) => {
+  const { markdown, nome = 'curriculo' } = req.body;
+  const arquivo = nome.replace(/[^\p{L}\p{N}\- ]+/gu, '').trim() || 'curriculo';
+  const pdf = await markdownParaPdf(markdown, arquivo);
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(arquivo)}.pdf`);
+  res.type('application/pdf').send(pdf);
 }));
 
 const PORTA = Number(process.env.PORT || 4321);

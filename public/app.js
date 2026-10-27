@@ -434,14 +434,14 @@ $('#baixar-docx').addEventListener('click', (e) =>
     baixar(`${nome}.docx`, await r.blob());
   }),
 );
-$('#imprimir').addEventListener('click', () => {
-  if (!textoAtual()) return toast('Nada para imprimir', true);
-  const w = window.open('', '_blank');
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(nomeArquivo())}</title>
-    <link rel="stylesheet" href="${location.origin}/impressao.css"></head>
-    <body>${md(textoAtual())}<script>window.onload=()=>setTimeout(()=>print(),200)<\/script></body></html>`);
-  w.document.close();
-});
+$('#baixar-pdf').addEventListener('click', (e) =>
+  ocupado(e.target, async () => {
+    if (!textoAtual()) throw new Error('Nada para exportar');
+    const nome = estado.modo === 'carta' ? 'Carta de apresentacao' : nomeArquivo();
+    const r = await api('/api/exportar/pdf', { method: 'POST', body: { markdown: textoAtual(), nome } });
+    baixar(`${nome}.pdf`, await r.blob());
+  }),
+);
 
 $('#nova').addEventListener('click', () => {
   Object.assign(estado, { geracaoId: null, analise: null, curriculo: '', carta: '', auditoria: null });

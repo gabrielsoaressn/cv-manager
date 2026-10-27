@@ -12,7 +12,7 @@ Adequa seu currículo a uma vaga usando IA gratuita, **sem inventar nada**: a ú
    - mostra quais palavras-chave da vaga aparecem no currículo;
    - **verifica a fidelidade**: uma segunda passada da IA confere cada afirmação contra o perfil mestre e aponta o que foi inventado ou exagerado;
    - gera uma carta de apresentação (opcional);
-   - exporta em `.md`, `.docx` (via pandoc) ou PDF (Imprimir → Salvar como PDF).
+   - exporta em `.md`, `.docx` (via pandoc) ou `.pdf` (via Chrome headless, sem cabeçalho/rodapé do navegador).
 4. **LinkedIn**: 7 ferramentas para o perfil do LinkedIn (título com 10 variações, "Sobre" no método PAS, experiências na fórmula XYZ, 25 palavras-chave, simulação de recrutador, seção "Em destaque" e modelos de DM). Usam o perfil mestre e, se você colar, o texto atual do seu LinkedIn. Quando falta um número real, a IA deixa `[ADICIONAR: ...]` em vez de inventar. Os resultados ficam em `data/linkedin/`.
 5. **Histórico**: tudo o que foi gerado fica em `data/geracoes/`.
 
