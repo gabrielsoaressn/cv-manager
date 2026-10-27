@@ -21,7 +21,7 @@ Adequa seu currículo a uma vaga usando IA gratuita, **sem inventar nada**: a ú
 ```bash
 npm install
 cp .env.example .env   # já existe um .env pronto para o Ollama
-npm start              # http://localhost:3333
+npm start              # http://localhost:4321
 ```
 
 ## IAs gratuitas suportadas

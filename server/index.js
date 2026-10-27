@@ -275,8 +275,14 @@ app.post('/api/exportar/docx', rota(async (req, res) => {
   }
 }));
 
-const PORTA = Number(process.env.PORT || 3333);
-app.listen(PORTA, '127.0.0.1', () => {
-  console.log(`CV Manager rodando em http://localhost:${PORTA}`);
-  console.log(`Coloque seus currículos em: ${PASTA_CURRICULOS}`);
-});
+const PORTA = Number(process.env.PORT || 4321);
+app
+  .listen(PORTA, '127.0.0.1', () => {
+    console.log(`CV Manager rodando em http://localhost:${PORTA}`);
+    console.log(`Coloque seus currículos em: ${PASTA_CURRICULOS}`);
+  })
+  .on('error', (e) => {
+    if (e.code !== 'EADDRINUSE') throw e;
+    console.error(`A porta ${PORTA} já está em uso por outro programa. Troque PORT no arquivo .env e rode de novo.`);
+    process.exit(1);
+  });
