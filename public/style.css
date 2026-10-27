@@ -200,3 +200,7 @@ label.bloco input { width: 100%; }
   background: color-mix(in srgb, var(--atencao) 12%, transparent); color: var(--texto);
   border: 1px solid color-mix(in srgb, var(--atencao) 40%, transparent);
 }
+
+#cancelar { position: fixed; right: 20px; bottom: 20px; z-index: 11; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2); }
+.botao.perigo-cheio { background: var(--erro); border-color: var(--erro); }
+.botao.perigo-cheio:hover:not(:disabled) { background: color-mix(in srgb, var(--erro) 85%, black); }

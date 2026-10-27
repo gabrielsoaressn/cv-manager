@@ -23,8 +23,13 @@ function toast(msg, erro = false) {
   toast.timer = setTimeout(() => (t.hidden = true), erro ? 7000 : 3000);
 }
 
+// Operações em andamento; o botão "Cancelar" aborta todas
+const emAndamento = new Set();
+
 async function api(url, opts = {}) {
+  const ctrl = [...emAndamento].at(-1);
   const r = await fetch(url, {
+    signal: ctrl?.signal,
     ...opts,
     headers: opts.body && !(opts.body instanceof FormData) ? { 'Content-Type': 'application/json' } : undefined,
     body: opts.body && !(opts.body instanceof FormData) ? JSON.stringify(opts.body) : opts.body,
@@ -65,17 +70,26 @@ function ia() {
 
 async function ocupado(botao, fn) {
   const textoOriginal = botao.textContent;
+  const ctrl = new AbortController();
+  emAndamento.add(ctrl);
+  $('#cancelar').hidden = false;
   botao.disabled = true;
   botao.textContent = 'Aguarde...';
   try {
     await fn();
   } catch (e) {
-    toast(e.message, true);
+    if (ctrl.signal.aborted) toast('Operação cancelada');
+    else toast(e.message, true);
+    $$('.progresso').forEach((el) => status(el, ''));
   } finally {
+    emAndamento.delete(ctrl);
+    $('#cancelar').hidden = emAndamento.size === 0;
     botao.disabled = false;
     botao.textContent = textoOriginal;
   }
 }
+
+$('#cancelar').addEventListener('click', () => emAndamento.forEach((c) => c.abort()));
 
 function status(el, msg) {
   el.hidden = !msg;

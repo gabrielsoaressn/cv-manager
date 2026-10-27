@@ -21,6 +21,7 @@ app.use('/vendor/marked.js', express.static(path.join(RAIZ, 'node_modules/marked
 
 const rota = (fn) => (req, res) =>
   Promise.resolve(fn(req, res)).catch((e) => {
+    if (e.name === 'AbortError') return res.end(); // cancelado pelo usuário
     console.error(e);
     if (!res.headersSent) res.status(400).json({ erro: e.message });
     else res.end(JSON.stringify({ tipo: 'erro', erro: e.message }) + '\n');
@@ -30,9 +31,16 @@ const rota = (fn) => (req, res) =>
 function abrirStream(req, res) {
   res.setHeader('Content-Type', 'application/x-ndjson; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
+  return { enviar: (ev) => res.write(JSON.stringify(ev) + '\n'), signal: cancelamento(res) };
+}
+
+/** Sinal abortado quando o navegador desiste da requisição (botão Cancelar, recarregar a página). */
+function cancelamento(res) {
   const ctrl = new AbortController();
-  res.on('close', () => ctrl.abort());
-  return { enviar: (ev) => res.write(JSON.stringify(ev) + '\n'), signal: ctrl.signal };
+  res.on('close', () => {
+    if (!res.writableEnded) ctrl.abort();
+  });
+  return ctrl.signal;
 }
 
 function ia(req) {
@@ -132,6 +140,7 @@ app.post('/api/vaga/analisar', rota(async (req, res) => {
     provedor,
     modelo,
     sistema: prompts.analisar.sistema,
+    signal: cancelamento(res),
     usuario: prompts.analisar.usuario({ perfil, vaga: req.body.vaga }),
   });
   res.json(analise);
@@ -180,6 +189,7 @@ app.post('/api/vaga/auditar', rota(async (req, res) => {
       provedor,
       modelo,
       sistema: prompts.auditar.sistema,
+      signal: cancelamento(res),
       usuario: prompts.auditar.usuario({ perfil, curriculo: req.body.curriculo }),
     }),
   );
