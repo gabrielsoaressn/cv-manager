@@ -359,6 +359,7 @@ async function salvarGeracao() {
     },
   });
   estado.geracaoId = g.id;
+  lembrarGeracao(g.id);
 }
 
 $('#gerar').addEventListener('click', (e) =>
@@ -431,34 +432,48 @@ $('#gerar-carta').addEventListener('click', (e) =>
 
 const textoAtual = () => (estado.modo === 'carta' ? estado.carta : estado.curriculo);
 
+/** Texto a exportar, ou erro explicando o que fazer quando não há nada aberto. */
+function exportavel() {
+  if (textoAtual()) return textoAtual();
+  if (estado.modo === 'carta' && estado.curriculo) throw new Error('Esta vaga ainda não tem carta. Clique em “Gerar carta” ou volte para “Visualizar”.');
+  throw new Error('Nenhum currículo aberto. Gere um novo ou abra um pela aba Histórico.');
+}
+
 $('#copiar').addEventListener('click', async () => {
-  if (!textoAtual()) return toast('Nada para copiar', true);
-  await navigator.clipboard.writeText(textoAtual());
-  toast('Copiado (Markdown)');
+  try {
+    await navigator.clipboard.writeText(exportavel());
+    toast('Copiado (Markdown)');
+  } catch (e) {
+    toast(e.message, true);
+  }
 });
 $('#baixar-md').addEventListener('click', () => {
-  if (!textoAtual()) return toast('Nada para baixar', true);
-  baixar(`${estado.modo === 'carta' ? 'Carta' : nomeArquivo()}.md`, textoAtual(), 'text/markdown');
+  try {
+    baixar(`${estado.modo === 'carta' ? 'Carta' : nomeArquivo()}.md`, exportavel(), 'text/markdown');
+  } catch (e) {
+    toast(e.message, true);
+  }
 });
 $('#baixar-docx').addEventListener('click', (e) =>
   ocupado(e.target, async () => {
-    if (!textoAtual()) throw new Error('Nada para exportar');
+    const markdown = exportavel();
     const nome = estado.modo === 'carta' ? 'Carta de apresentacao' : nomeArquivo();
-    const r = await api('/api/exportar/docx', { method: 'POST', body: { markdown: textoAtual(), nome } });
+    const r = await api('/api/exportar/docx', { method: 'POST', body: { markdown, nome } });
     baixar(`${nome}.docx`, await r.blob());
   }),
 );
 $('#baixar-pdf').addEventListener('click', (e) =>
   ocupado(e.target, async () => {
-    if (!textoAtual()) throw new Error('Nada para exportar');
+    const markdown = exportavel();
     const nome = estado.modo === 'carta' ? 'Carta de apresentacao' : nomeArquivo();
-    const r = await api('/api/exportar/pdf', { method: 'POST', body: { markdown: textoAtual(), nome } });
+    const r = await api('/api/exportar/pdf', { method: 'POST', body: { markdown, nome } });
     baixar(`${nome}.pdf`, await r.blob());
   }),
 );
 
 $('#nova').addEventListener('click', () => {
   Object.assign(estado, { geracaoId: null, analise: null, curriculo: '', carta: '', auditoria: null });
+  lembrarGeracao(null);
   $('#vaga').value = '';
   $('#instrucoes').value = '';
   renderAnalise();
@@ -468,6 +483,40 @@ $('#nova').addEventListener('click', () => {
 });
 
 // ---------- histórico ----------
+function lembrarGeracao(id) {
+  try {
+    if (id) localStorage.setItem('geracao-aberta', id);
+    else localStorage.removeItem('geracao-aberta');
+  } catch {}
+}
+
+async function abrirGeracao(id) {
+  const g = await apiJson(`/api/geracoes/${id}`);
+  Object.assign(estado, { geracaoId: g.id, analise: g.analise, curriculo: g.curriculo || '', carta: g.carta || '', auditoria: g.auditoria });
+  lembrarGeracao(g.id);
+  $('#vaga').value = g.vaga || '';
+  $('#instrucoes').value = g.instrucoes || '';
+  if (g.idioma) $('#idioma').value = g.idioma;
+  if (g.tamanho) $('#tamanho').value = g.tamanho;
+  renderAnalise();
+  renderCurriculo();
+  renderAuditoria();
+  modo('ver');
+}
+
+/** Reabre o currículo que estava aberto antes de recarregar a página. */
+async function reabrirUltimaGeracao() {
+  let id;
+  try {
+    id = localStorage.getItem('geracao-aberta');
+  } catch {}
+  if (!id) return;
+  try {
+    await abrirGeracao(id);
+  } catch {
+    lembrarGeracao(null); // foi apagada do histórico
+  }
+}
 async function carregarHistorico() {
   const itens = await apiJson('/api/geracoes');
   $('#lista-historico').innerHTML = itens.length
@@ -491,16 +540,7 @@ $('#lista-historico').addEventListener('click', async (e) => {
       carregarHistorico();
     }
     if (abrir) {
-      const g = await apiJson(`/api/geracoes/${abrir}`);
-      Object.assign(estado, { geracaoId: g.id, analise: g.analise, curriculo: g.curriculo || '', carta: g.carta || '', auditoria: g.auditoria });
-      $('#vaga').value = g.vaga || '';
-      $('#instrucoes').value = g.instrucoes || '';
-      if (g.idioma) $('#idioma').value = g.idioma;
-      if (g.tamanho) $('#tamanho').value = g.tamanho;
-      renderAnalise();
-      renderCurriculo();
-      renderAuditoria();
-      modo('ver');
+      await abrirGeracao(abrir);
       $('[data-aba="vaga"]').click();
     }
   } catch (err) {
@@ -586,4 +626,4 @@ $('#linkedin-copiar').addEventListener('click', async () => {
 });
 
 // ---------- início ----------
-Promise.all([carregarProvedores(), carregarFontes(), carregarPerfil()]).catch((e) => toast(e.message, true));
+Promise.all([carregarProvedores(), carregarFontes(), carregarPerfil(), reabrirUltimaGeracao()]).catch((e) => toast(e.message, true));
