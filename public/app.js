@@ -195,11 +195,14 @@ async function carregarPerfil() {
   const { perfil } = await apiJson('/api/perfil');
   $('#perfil').value = perfil;
   atualizarPreviaPerfil();
+  avisoPerfil();
 }
+const avisoPerfil = () => ($('#aviso-sem-perfil').hidden = !!$('#perfil').value.trim());
 
 $('#salvar-perfil').addEventListener('click', (e) =>
   ocupado(e.target, async () => {
     await apiJson('/api/perfil', { method: 'PUT', body: { perfil: $('#perfil').value } });
+    avisoPerfil();
     toast('Perfil mestre salvo');
   }),
 );
@@ -223,6 +226,7 @@ function consolidar(incremental) {
         } else if (ev.tipo === 'fim') {
           $('#perfil').value = ev.perfil;
           atualizarPreviaPerfil();
+          avisoPerfil();
         }
       });
       status(prog, '');
@@ -359,6 +363,7 @@ $('#gerar').addEventListener('click', (e) =>
 
     status(st, 'Escrevendo o currículo adequado...');
     modo('ver');
+    $('.resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
     estado.curriculo = '';
     let texto = '';
     await stream(

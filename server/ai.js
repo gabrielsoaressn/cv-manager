@@ -3,6 +3,24 @@
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const OLLAMA_NUM_CTX = Number(process.env.OLLAMA_NUM_CTX || 16384);
+const OLLAMA_MAX_CTX = Number(process.env.OLLAMA_MAX_CTX || 32768);
+
+/**
+ * O Ollama corta em silêncio o que não cabe no contexto (inclusive as instruções).
+ * Estima os tokens (~3 caracteres por token em português) e aumenta o contexto
+ * quando preciso; se nem o máximo couber, falha com uma mensagem clara.
+ */
+function contextoNecessario(messages) {
+  const caracteres = messages.reduce((n, m) => n + m.content.length, 0);
+  const necessario = Math.ceil(caracteres / 3) + 4096; // + espaço para a resposta
+  if (necessario > OLLAMA_MAX_CTX) {
+    throw new Error(
+      `O texto enviado (~${Math.round(necessario / 1000)} mil tokens) não cabe no contexto do modelo local (${OLLAMA_MAX_CTX / 1024}k). ` +
+        'Consolide o perfil mestre (aba 2) para resumir seus currículos, ou use Groq/Gemini.',
+    );
+  }
+  return Math.max(OLLAMA_NUM_CTX, Math.ceil(necessario / 4096) * 4096);
+}
 
 const CLOUD = {
   groq: {
@@ -100,6 +118,7 @@ async function erroHttp(r, provedor) {
 }
 
 async function* streamOllama({ model, messages, temperature, json, signal }, desligarThink = true) {
+  const numCtx = contextoNecessario(messages);
   const r = await fetch(`${OLLAMA_URL}/api/chat`, {
     method: 'POST',
     signal,
@@ -111,7 +130,7 @@ async function* streamOllama({ model, messages, temperature, json, signal }, des
       keep_alive: '30m',
       ...(desligarThink ? { think: false } : {}),
       ...(json ? { format: 'json' } : {}),
-      options: { temperature, num_ctx: OLLAMA_NUM_CTX },
+      options: { temperature, num_ctx: numCtx },
     }),
   });
   if (!r.ok) {

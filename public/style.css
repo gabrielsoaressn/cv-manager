@@ -195,3 +195,8 @@ label.bloco input { width: 100%; }
 .ferramenta.ativa { border-color: var(--primaria); background: color-mix(in srgb, var(--primaria) 8%, transparent); }
 #linkedin-campos-faltando { color: var(--atencao); margin-bottom: 8px; }
 #linkedin-campos-faltando:empty { display: none; }
+.alerta {
+  font-size: 14px; padding: 8px 12px; border-radius: 8px; margin: 6px 0 10px;
+  background: color-mix(in srgb, var(--atencao) 12%, transparent); color: var(--texto);
+  border: 1px solid color-mix(in srgb, var(--atencao) 40%, transparent);
+}
