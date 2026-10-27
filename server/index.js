@@ -15,7 +15,8 @@ import { RAIZ, PASTA_CURRICULOS, PASTA_DADOS, PASTA_GERACOES, PASTA_LINKEDIN, AR
 const run = promisify(execFile);
 const app = express();
 app.use(express.json({ limit: '5mb' }));
-app.use(express.static(path.join(RAIZ, 'public')));
+// no-cache: o navegador revalida a cada carga e nunca fica com uma versão velha da interface
+app.use(express.static(path.join(RAIZ, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 app.use('/vendor/marked.js', express.static(path.join(RAIZ, 'node_modules/marked/lib/marked.umd.js')));
 
 const rota = (fn) => (req, res) =>
