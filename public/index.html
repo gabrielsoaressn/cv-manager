@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CV Manager</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="/vendor/marked.js"></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="marca">
+      <span class="logo">CV</span>
+      <div>
+        <strong>CV Manager</strong>
+        <small>Currículos adequados à vaga, só com o que você realmente fez</small>
+      </div>
+    </div>
+    <div class="ia">
+      <label>IA
+        <select id="provedor"></select>
+      </label>
+      <label>Modelo
+        <select id="modelo"></select>
+      </label>
+      <span id="ia-aviso" class="aviso-ia"></span>
+    </div>
+  </header>
+
+  <nav class="abas">
+    <button data-aba="fontes" class="ativa">1 · Currículos-fonte</button>
+    <button data-aba="perfil">2 · Perfil mestre</button>
+    <button data-aba="vaga">3 · Adequar à vaga</button>
+    <button data-aba="linkedin">LinkedIn</button>
+    <button data-aba="historico">Histórico</button>
+  </nav>
+
+  <main>
+    <!-- 1. Fontes -->
+    <section id="aba-fontes" class="aba ativa">
+      <div class="cartao">
+        <div class="cabecalho">
+          <div>
+            <h2>Currículos-fonte</h2>
+            <p class="ajuda">Seus currículos antigos são a fonte de verdade: a IA só usa o que está neles. Coloque os arquivos na pasta <code>curriculos/</code> do projeto ou envie por aqui. Formatos: PDF, DOCX, DOC, ODT, RTF, TXT, MD.</p>
+          </div>
+          <div class="acoes">
+            <label class="botao secundario">Enviar arquivos
+              <input type="file" id="upload" multiple accept=".pdf,.docx,.doc,.odt,.rtf,.txt,.md" hidden />
+            </label>
+            <button id="recarregar-fontes" class="botao secundario">Recarregar pasta</button>
+          </div>
+        </div>
+        <div id="lista-fontes" class="lista"></div>
+      </div>
+      <div class="cartao" id="previa-fonte" hidden>
+        <div class="cabecalho"><h3 id="previa-titulo"></h3><button class="botao link" id="fechar-previa">Fechar</button></div>
+        <pre id="previa-texto" class="texto-bruto"></pre>
+      </div>
+    </section>
+
+    <!-- 2. Perfil mestre -->
+    <section id="aba-perfil" class="aba">
+      <div class="cartao">
+        <div class="cabecalho">
+          <div>
+            <h2>Perfil mestre</h2>
+            <p class="ajuda">A IA junta todos os currículos selecionados num único documento factual, sem duplicatas. <strong>Revise e corrija</strong> à vontade: é dele que saem todos os currículos adequados. Se não houver perfil, os currículos brutos são usados diretamente.</p>
+          </div>
+          <div class="acoes">
+            <button id="consolidar" class="botao">Consolidar com IA</button>
+            <button id="consolidar-incremental" class="botao secundario" title="Mantém o perfil atual e incorpora apenas os currículos selecionados">Incorporar ao atual</button>
+            <button id="salvar-perfil" class="botao secundario">Salvar edição</button>
+          </div>
+        </div>
+        <details class="selecao-fontes" open>
+          <summary>Currículos a usar</summary>
+          <div id="checks-fontes"></div>
+        </details>
+        <div id="progresso-perfil" class="progresso" hidden></div>
+        <div class="duas-colunas">
+          <textarea id="perfil" spellcheck="false" placeholder="O perfil mestre aparece aqui depois de consolidado. Você também pode escrevê-lo/colá-lo manualmente."></textarea>
+          <div id="perfil-preview" class="markdown"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Vaga -->
+    <section id="aba-vaga" class="aba">
+      <div class="grade-vaga">
+        <div class="cartao">
+          <h2>A vaga</h2>
+          <textarea id="vaga" class="vaga" placeholder="Cole aqui a descrição completa da vaga (título, responsabilidades, requisitos...)"></textarea>
+          <div class="opcoes">
+            <label>Idioma do currículo
+              <select id="idioma">
+                <option value="auto">Igual ao da vaga</option>
+                <option value="pt">Português</option>
+                <option value="en">Inglês</option>
+                <option value="es">Espanhol</option>
+              </select>
+            </label>
+            <label>Tamanho
+              <select id="tamanho">
+                <option value="normal">Até 2 páginas</option>
+                <option value="curto">1 página</option>
+              </select>
+            </label>
+          </div>
+          <label class="check"><input type="checkbox" id="auto-auditar" checked /> Verificar fidelidade automaticamente após gerar</label>
+          <label class="bloco">Instruções extras (opcional)
+            <input id="instrucoes" placeholder="Ex.: destacar experiência com liderança; omitir estágio de 2012" />
+          </label>
+          <div class="acoes">
+            <button id="gerar" class="botao">Analisar vaga e gerar currículo</button>
+            <button id="nova" class="botao link">Nova vaga</button>
+          </div>
+          <div id="status-vaga" class="progresso" hidden></div>
+
+          <div id="analise" hidden></div>
+        </div>
+
+        <div class="cartao resultado">
+          <div class="cabecalho">
+            <h2>Currículo adequado</h2>
+            <div class="alternar">
+              <button data-modo="ver" class="ativa">Visualizar</button>
+              <button data-modo="editar">Editar</button>
+              <button data-modo="carta">Carta</button>
+            </div>
+          </div>
+          <div id="cobertura" hidden></div>
+          <div id="cv-preview" class="markdown folha"><p class="vazio">O currículo gerado aparece aqui.</p></div>
+          <textarea id="cv-editor" spellcheck="false" hidden></textarea>
+          <div id="carta-preview" class="markdown folha" hidden><p class="vazio">Clique em “Gerar carta” para criar uma carta de apresentação para esta vaga.</p></div>
+          <div class="acoes barra">
+            <button id="auditar" class="botao secundario" title="A IA confere cada afirmação contra o perfil mestre">Verificar fidelidade</button>
+            <button id="gerar-carta" class="botao secundario">Gerar carta</button>
+            <button id="copiar" class="botao secundario">Copiar</button>
+            <button id="baixar-md" class="botao secundario">.md</button>
+            <button id="baixar-docx" class="botao secundario">.docx</button>
+            <button id="imprimir" class="botao secundario">Imprimir / PDF</button>
+          </div>
+          <div id="auditoria" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LinkedIn -->
+    <section id="aba-linkedin" class="aba">
+      <div class="grade-vaga">
+        <div class="cartao">
+          <h2>LinkedIn</h2>
+          <p class="ajuda">Usa o perfil mestre como fonte. Onde faltar número real, a IA deixa um marcador <code>[ADICIONAR: ...]</code> para você completar.</p>
+          <div class="campos-linkedin">
+            <label class="bloco">Setor <input data-campo="setor" placeholder="Ex.: marketing digital" /></label>
+            <label class="bloco">Cargo almejado <input data-campo="cargo" placeholder="Ex.: Gerente de Performance" /></label>
+            <label class="bloco">Empresa-alvo <input data-campo="empresa" placeholder="Ex.: Nubank" /></label>
+          </div>
+          <details class="selecao-fontes">
+            <summary>Perfil atual do LinkedIn (opcional)</summary>
+            <textarea id="linkedin-atual" rows="8" placeholder="Cole aqui seu título, seção Sobre, experiências etc. como estão hoje no LinkedIn."></textarea>
+            <div class="acoes"><button id="salvar-linkedin" class="botao secundario">Salvar</button></div>
+          </details>
+          <div id="ferramentas-linkedin" class="ferramentas"></div>
+        </div>
+
+        <div class="cartao resultado">
+          <div class="cabecalho">
+            <h2 id="linkedin-titulo">Escolha uma ferramenta</h2>
+          </div>
+          <div id="linkedin-campos-faltando" class="ajuda"></div>
+          <div id="linkedin-resultado" class="markdown folha"><p class="vazio">O resultado aparece aqui.</p></div>
+          <div class="acoes barra">
+            <button id="linkedin-gerar" class="botao" disabled>Gerar</button>
+            <button id="linkedin-copiar" class="botao secundario">Copiar</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Histórico -->
+    <section id="aba-historico" class="aba">
+      <div class="cartao">
+        <h2>Histórico</h2>
+        <p class="ajuda">Cada currículo gerado fica salvo em <code>data/geracoes/</code>.</p>
+        <div id="lista-historico" class="lista"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

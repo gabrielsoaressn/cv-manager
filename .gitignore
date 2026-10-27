@@ -1,0 +1,6 @@
+node_modules/
+.env
+data/
+curriculos/*
+!curriculos/.LEIA-ME
+base de dados/

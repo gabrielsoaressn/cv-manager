@@ -1,0 +1,22 @@
+{
+  "name": "cv-manager",
+  "version": "1.0.0",
+  "description": "Adequa currículos a vagas usando IA gratuita (Ollama local, Groq ou Gemini), sem inventar experiências.",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mammoth": "^1.13.0",
+    "marked": "^18.1.2",
+    "multer": "^2.5.0",
+    "pdf-parse": "^1.1.1"
+  }
+}
